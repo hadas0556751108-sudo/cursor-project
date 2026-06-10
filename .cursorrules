@@ -1,0 +1,29 @@
+# הנחיות עבודה לפרויקט
+
+## אסטרטגיית נתונים
+- אין ליצור חיבורים אמיתיים ל-Supabase כרגע.
+- לכל משימה שדורשת נתונים, צור קובץ `mock_data.ts` או השתמש בנתוני דמה פנימיים המדמים את מבנה הטבלאות.
+- מבנה הנתונים צריך להיות עקבי וטיפוסי ל-Master Health.
+
+## עקרונות כתיבת קוד
+- התמקד בביצועים ובקריאות של הקוד.
+- הקפד על עקרונות של קוד נקי (Clean Code).
+- אבטחה: אל תחשוף מפתחות API בקוד. השתמש במשתני סביבה מוגדרים מראש ב-.env.example בלבד.
+- שמור על הפרדה ברורה בין הלוגיקה העסקית (Business Logic) לבין ממשק המשתמש (UI).
+
+## תהליך עבודה
+- לפני כתיבת קוד מורכב, הסבר בקצרה מה אתה הולך לעשות.
+- אם יש ספק לגבי מימוש, שאל אותי לפני שאתה מייצר קבצים חדשים.
+## Design & Aesthetics (HubOffice Language)
+- Visual Style: Premium, futuristic, clean, medical-enterprise grade. Think "Linear" or "Notion" dashboards.
+- Color Palette: Professional medical aesthetic – crisp whites, subtle grays, deep dark sidebar (navy/charcoal), and soft accent colors (blue/teal) for status badges.
+- Animations: Use Framer Motion for all transitions. Animations must be subtle, fast, and smooth (not jumpy).
+- Layout: Use consistent white space, glassmorphism effects (soft shadows/transparency) on cards and modals to create depth.
+- Consistency: Every button, input, and card must follow the same padding, border-radius, and font-weight standards.
+- User Experience: Focus on clarity. Information density should be high but clean.
+## Tech Stack & Architecture
+- Framework: Use Next.js (App Router).
+- CSS: Tailwind CSS for all styling.
+- UI Components: shadcn/ui for consistent, enterprise-grade components.
+- State Management: Use React hooks (useState/useEffect/useContext) or simple state management. Avoid over-engineering with complex libraries unless necessary.
+- Deployment: Architecture must be optimized for Vercel deployment.
