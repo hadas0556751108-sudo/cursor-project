@@ -18,17 +18,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="he" dir="rtl">
       <body className={inter.className}>
         <AuthProvider>
-          <div className="flex h-screen overflow-hidden bg-background">
-            <Sidebar />
+          <div className="flex h-screen overflow-hidden bg-[#0F1117]">
             <div className="flex flex-1 flex-col overflow-hidden">
               <Topbar />
-              <main className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 to-slate-100 p-6 dark:from-slate-900 dark:to-slate-950">
+              <main className="flex-1 overflow-y-auto p-6">
                 {children}
               </main>
             </div>
+            <Sidebar />
           </div>
         </AuthProvider>
       </body>

@@ -64,7 +64,46 @@ export default function Dashboard() {
             variants={itemVariants}
             className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
           >
-           
+            <Card className="bg-[#161B22] border-[#30363D] card-hover">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-[#E6EDF3]">Upcoming Shifts</CardTitle>
+                <Calendar className="h-4 w-4 text-[#8B949E]" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-[#E6EDF3]">{userShifts.length}</div>
+                <p className="text-xs text-[#8B949E]">This month</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-[#161B22] border-[#30363D] card-hover">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-[#E6EDF3]">Pending Requests</CardTitle>
+                <FileText className="h-4 w-4 text-[#8B949E]" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-[#E6EDF3]">{userRequests.filter(r => r.status === 'pending_dept' || r.status === 'pending_finance').length}</div>
+                <p className="text-xs text-[#8B949E]">Awaiting approval</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-[#161B22] border-[#30363D] card-hover">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-[#E6EDF3]">Hours This Week</CardTitle>
+                <Clock className="h-4 w-4 text-[#8B949E]" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-[#E6EDF3]">32</div>
+                <p className="text-xs text-[#8B949E]">Out of 48 max</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-[#161B22] border-[#30363D] card-hover">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-[#E6EDF3]">Approved Requests</CardTitle>
+                <CheckCircle className="h-4 w-4 text-[#8B949E]" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-[#E6EDF3]">{userRequests.filter(r => r.status === 'approved').length}</div>
+                <p className="text-xs text-[#8B949E]">Total approved</p>
+              </CardContent>
+            </Card>
           </motion.div>
         </>
       )}
@@ -76,15 +115,14 @@ export default function Dashboard() {
             variants={itemVariants}
             className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
           >
-           
-            <Card className="glass card-hover">
+            <Card className="bg-[#161B22] border-[#30363D] card-hover">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Monthly Budget</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium text-[#E6EDF3]">Monthly Budget</CardTitle>
+                <DollarSign className="h-4 w-4 text-[#8B949E]" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₪125K</div>
-                <p className="text-xs text-muted-foreground">This month</p>
+                <div className="text-2xl font-bold text-[#E6EDF3]">₪125K</div>
+                <p className="text-xs text-[#8B949E]">This month</p>
               </CardContent>
             </Card>
           </motion.div>
