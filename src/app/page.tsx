@@ -6,10 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/auth-context';
-import { mockShifts, mockRequests, mockDepartments } from '@/lib/mock-data';
-// הוספתי כאן את DollarSign
+import { getShifts, getRequests, getDepartments } from '@/lib/supabase-data';
 import { Calendar, Clock, FileText, TrendingUp, AlertCircle, CheckCircle, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -35,12 +35,56 @@ const itemVariants = {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const router = useRouter();
+  const [shifts, setShifts] = React.useState<any[]>([]);
+  const [requests, setRequests] = React.useState<any[]>([]);
+  const [departments, setDepartments] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
   const isManager = user?.role === 'manager' || user?.role === 'admin';
   const isFinance = user?.role === 'finance' || user?.role === 'admin';
 
-  const userShifts = mockShifts.filter(s => s.employeeId === user?.id);
-  const userRequests = mockRequests.filter(r => r.employeeId === user?.id);
-  const pendingRequests = mockRequests.filter(r => r.status === 'pending_dept' || r.status === 'pending_finance');
+  React.useEffect(() => {
+    // Redirect to login if no user
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    const loadData = async () => {
+      try {
+        const [shiftsData, requestsData, departmentsData] = await Promise.all([
+          getShifts(),
+          getRequests(),
+          getDepartments()
+        ]);
+        setShifts(shiftsData);
+        setRequests(requestsData);
+        setDepartments(departmentsData);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [user, router]);
+
+  const userShifts = shifts.filter(s => s.employee_id === user?.id);
+  const userRequests = requests.filter(r => r.employee_id === user?.id);
+  const pendingRequests = requests.filter(r => r.status === 'pending_dept' || r.status === 'pending_finance');
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div

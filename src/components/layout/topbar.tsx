@@ -16,15 +16,33 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/auth-context';
-import { mockUsers, mockNotifications } from '@/lib/mock-data';
+import { getUsers, getNotifications } from '@/lib/supabase-data';
 import { cn } from '@/lib/utils';
 
 export function Topbar() {
   const { user, switchUser, logout } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
-  const userNotifications = mockNotifications.filter(n => n.userId === user?.id);
+  React.useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [usersData, notificationsData] = await Promise.all([
+          getUsers(),
+          getNotifications()
+        ]);
+        setUsers(usersData);
+        setNotifications(notificationsData);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    };
+    loadData();
+  }, []);
+
+  const userNotifications = notifications.filter(n => n.user_id === user?.id);
   const unreadCount = userNotifications.filter(n => !n.read).length;
 
   return (
@@ -148,40 +166,44 @@ export function Topbar() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-[#30363D]" />
-            <DropdownMenuLabel className="text-xs font-semibold text-[#8B949E] flex items-center gap-2 bg-[#0D1117] p-2 rounded border border-[#30363D]">
-              <Lock className="h-3 w-3" />
-              🔐 Switch User (Admin Only)
-            </DropdownMenuLabel>
-            <div className="px-2 py-1">
-              <p className="text-xs text-[#8B949E] mb-2">
-                Select a user account to simulate different roles
-              </p>
-            </div>
-            {mockUsers.map((u) => (
-              <DropdownMenuItem
-                key={u.id}
-                onClick={() => switchUser(u.id)}
-                className={cn(
-                  'capitalize flex items-center gap-3 py-3 px-2 text-[#E6EDF3] hover:bg-[#30363D]/50',
-                  user?.id === u.id && 'bg-[#34E3D9]/10'
-                )}
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#34E3D9] to-[#27DDD3] text-xs font-semibold text-[#003734]">
-                  {u.avatar}
+            {user?.role === 'admin' && (
+              <>
+                <DropdownMenuLabel className="text-xs font-semibold text-[#8B949E] flex items-center gap-2 bg-[#0D1117] p-2 rounded border border-[#30363D]">
+                  <Lock className="h-3 w-3" />
+                  🔐 Switch User (Admin Only)
+                </DropdownMenuLabel>
+                <div className="px-2 py-1">
+                  <p className="text-xs text-[#8B949E] mb-2">
+                    Select a user account to simulate different roles
+                  </p>
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">{u.name}</span>
-                    {user?.id === u.id && (
-                      <Badge variant="secondary" className="text-xs h-5 bg-[#34E3D9]/10 text-[#34E3D9] border-[#34E3D9]/20">Active</Badge>
+                {users.map((u) => (
+                  <DropdownMenuItem
+                    key={u.id}
+                    onClick={() => switchUser(u.id)}
+                    className={cn(
+                      'capitalize flex items-center gap-3 py-3 px-2 text-[#E6EDF3] hover:bg-[#30363D]/50',
+                      user?.id === u.id && 'bg-[#34E3D9]/10'
                     )}
-                  </div>
-                  <span className="text-xs text-[#8B949E] capitalize">{u.role}</span>
-                </div>
-                <UserIcon className="h-4 w-4 text-[#8B949E]" />
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator className="bg-[#30363D]" />
+                  >
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#34E3D9] to-[#27DDD3] text-xs font-semibold text-[#003734]">
+                      {u.name.charAt(0)}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">{u.name}</span>
+                        {user?.id === u.id && (
+                          <Badge variant="secondary" className="text-xs h-5 bg-[#34E3D9]/10 text-[#34E3D9] border-[#34E3D9]/20">Active</Badge>
+                        )}
+                      </div>
+                      <span className="text-xs text-[#8B949E] capitalize">{u.role}</span>
+                    </div>
+                    <UserIcon className="h-4 w-4 text-[#8B949E]" />
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator className="bg-[#30363D]" />
+              </>
+            )}
             <DropdownMenuItem onClick={logout} className="text-[#FD6D61] flex items-center gap-2 hover:bg-[#FD6D61]/10">
               <Lock className="h-4 w-4" />
               Log out

@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/auth-context';
-import { mockShifts, mockUsers, mockDepartments } from '@/lib/mock-data';
+import { getShifts, getUsers, getDepartments } from '@/lib/supabase-data';
 import { Calendar as CalendarIcon, Clock, UserPlus, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -45,8 +45,44 @@ export default function ShiftsPage() {
   const [selectedShift, setSelectedShift] = useState<any>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
 
-  const departmentShifts = mockShifts.filter(s => s.departmentId === user?.departmentId);
-  const uncoveredShifts = departmentShifts.filter(s => !s.employeeId);
+  const [shifts, setShifts] = React.useState<any[]>([]);
+  const [users, setUsers] = React.useState<any[]>([]);
+  const [departments, setDepartments] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [shiftsData, usersData, departmentsData] = await Promise.all([
+          getShifts(),
+          getUsers(),
+          getDepartments()
+        ]);
+        setShifts(shiftsData);
+        setUsers(usersData);
+        setDepartments(departmentsData);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  const departmentShifts = shifts.filter(s => s.department_id === user?.department_id);
+  const uncoveredShifts = departmentShifts.filter(s => !s.employee_id);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleEditShift = () => {
     console.log('Editing shift:', selectedShift?.id);
@@ -62,14 +98,14 @@ export default function ShiftsPage() {
   };
 
   const calendarEvents = departmentShifts.map(shift => {
-    const assignedUser = mockUsers.find(u => u.id === shift.employeeId);
+    const assignedUser = users.find(u => u.id === shift.employee_id);
     return {
       id: shift.id,
       title: assignedUser ? `${assignedUser.name}` : 'Unassigned',
-      start: `${shift.date}T${shift.startTime}`,
-      end: `${shift.date}T${shift.endTime}`,
-      backgroundColor: shift.employeeId ? '#3b82f6' : '#ef4444',
-      borderColor: shift.employeeId ? '#3b82f6' : '#ef4444',
+      start: `${shift.date}T${shift.start_time}`,
+      end: `${shift.date}T${shift.end_time}`,
+      backgroundColor: shift.employee_id ? '#3b82f6' : '#ef4444',
+      borderColor: shift.employee_id ? '#3b82f6' : '#ef4444',
       extendedProps: shift
     };
   });
@@ -169,19 +205,19 @@ export default function ShiftsPage() {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Time</span>
                 <span className="text-sm text-muted-foreground">
-                  {selectedShift.startTime} - {selectedShift.endTime}
+                  {selectedShift.start_time} - {selectedShift.end_time}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Assigned To</span>
                 <span className="text-sm text-muted-foreground">
-                  {mockUsers.find(u => u.id === selectedShift.employeeId)?.name || 'Unassigned'}
+                  {users.find(u => u.id === selectedShift.employee_id)?.name || 'Unassigned'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Department</span>
                 <span className="text-sm text-muted-foreground">
-                  {mockDepartments.find(d => d.id === selectedShift.departmentId)?.name}
+                  {departments.find(d => d.id === selectedShift.department_id)?.name}
                 </span>
               </div>
               <div className="pt-4 flex gap-2">
@@ -245,7 +281,7 @@ export default function ShiftsPage() {
                   <SelectValue placeholder="Select employee" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockUsers.filter(u => u.departmentId === user?.departmentId).map((u) => (
+                  {users.filter(u => u.department_id === user?.department_id).map((u) => (
                     <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
                   ))}
                 </SelectContent>

@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/auth-context';
-import { mockRequests, mockUsers, mockSettings } from '@/lib/mock-data';
+import { getRequests, getUsers, getSettings, updateRequest } from '@/lib/supabase-data';
 import { FileText, Plus, Calendar, DollarSign, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -51,9 +51,45 @@ export default function RequestsPage() {
   const isManager = user?.role === 'manager' || user?.role === 'admin';
   const isFinance = user?.role === 'finance' || user?.role === 'admin';
 
-  const userRequests = mockRequests.filter(r => r.employeeId === user?.id);
-  const pendingDept = mockRequests.filter(r => r.status === 'pending_dept');
-  const pendingFinance = mockRequests.filter(r => r.status === 'pending_finance');
+  const [requests, setRequests] = React.useState<any[]>([]);
+  const [users, setUsers] = React.useState<any[]>([]);
+  const [settings, setSettings] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [requestsData, usersData, settingsData] = await Promise.all([
+          getRequests(),
+          getUsers(),
+          getSettings()
+        ]);
+        setRequests(requestsData);
+        setUsers(usersData);
+        setSettings(settingsData[0]);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  const userRequests = requests.filter(r => r.employee_id === user?.id);
+  const pendingDept = requests.filter(r => r.status === 'pending_dept');
+  const pendingFinance = requests.filter(r => r.status === 'pending_finance');
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -97,16 +133,31 @@ export default function RequestsPage() {
     setCategory('');
   };
 
-  const handleApprove = (requestId: string) => {
-    console.log('Approving request:', requestId);
+  const handleApprove = async (requestId: string) => {
+    try {
+      await updateRequest(requestId, { status: 'approved' });
+      setRequests(requests.map(r => r.id === requestId ? { ...r, status: 'approved' } : r));
+    } catch (error) {
+      console.error('Error approving request:', error);
+    }
   };
 
-  const handleReject = (requestId: string) => {
-    console.log('Rejecting request:', requestId);
+  const handleReject = async (requestId: string) => {
+    try {
+      await updateRequest(requestId, { status: 'rejected' });
+      setRequests(requests.map(r => r.id === requestId ? { ...r, status: 'rejected' } : r));
+    } catch (error) {
+      console.error('Error rejecting request:', error);
+    }
   };
 
-  const handleCancel = (requestId: string) => {
-    console.log('Cancelling request:', requestId);
+  const handleCancel = async (requestId: string) => {
+    try {
+      await updateRequest(requestId, { status: 'rejected' });
+      setRequests(requests.map(r => r.id === requestId ? { ...r, status: 'rejected' } : r));
+    } catch (error) {
+      console.error('Error cancelling request:', error);
+    }
   };
 
   return (
@@ -193,7 +244,7 @@ export default function RequestsPage() {
                 <CardContent>
                   <div className="space-y-4">
                     {pendingDept.length > 0 ? pendingDept.map((request) => {
-                      const requestUser = mockUsers.find(u => u.id === request.employeeId);
+                      const requestUser = users.find(u => u.id === request.employee_id);
                       return (
                         <motion.div
                           key={request.id}
@@ -234,12 +285,12 @@ export default function RequestsPage() {
               <Card className="glass">
                 <CardHeader>
                   <CardTitle>Pending Finance Approval</CardTitle>
-                  <CardDescription>Expense requests above ₪{mockSettings.reimbursementThreshold}</CardDescription>
+                  <CardDescription>Expense requests above ₪{settings?.reimbursementThreshold}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     {pendingFinance.length > 0 ? pendingFinance.map((request) => {
-                      const requestUser = mockUsers.find(u => u.id === request.employeeId);
+                      const requestUser = users.find(u => u.id === request.employee_id);
                       return (
                         <motion.div
                           key={request.id}
@@ -358,7 +409,7 @@ export default function RequestsPage() {
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockSettings.requestCategories.map((cat) => (
+                      {settings?.requestCategories.map((cat: string) => (
                         <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                       ))}
                     </SelectContent>

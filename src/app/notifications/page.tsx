@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/auth-context';
-import { mockNotifications, mockUsers } from '@/lib/mock-data';
+import { getNotifications, getUsers, updateNotification } from '@/lib/supabase-data';
 import { Bell, Check, CheckCheck, Trash2, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -35,9 +35,24 @@ const itemVariants = {
 export default function NotificationsPage() {
   const { user } = useAuth();
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const [notifications, setNotifications] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
 
-  const userNotifications = notifications.filter(n => n.userId === user?.id);
+  React.useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [notificationsData] = await Promise.all([getNotifications()]);
+        setNotifications(notificationsData);
+      } catch (error) {
+        console.error('Error loading notifications:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  const userNotifications = notifications.filter(n => n.user_id === user?.id);
   
   const filteredNotifications = userNotifications.filter(n => {
     if (filter === 'all') return true;
@@ -48,16 +63,39 @@ export default function NotificationsPage() {
 
   const unreadCount = userNotifications.filter(n => !n.read).length;
 
-  function markAsRead(id: string) {
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
-  function markAllAsRead() {
-    setNotifications(notifications.map(n => 
-      n.userId === user?.id ? { ...n, read: true } : n
-    ));
+  async function markAsRead(id: string) {
+    try {
+      await updateNotification(id, { read: true });
+      setNotifications(notifications.map(n => 
+        n.id === id ? { ...n, read: true } : n
+      ));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  }
+
+  async function markAllAsRead() {
+    try {
+      await Promise.all(
+        userNotifications.filter(n => !n.read).map(n => updateNotification(n.id, { read: true }))
+      );
+      setNotifications(notifications.map(n => 
+        n.user_id === user?.id ? { ...n, read: true } : n
+      ));
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
   }
 
   function deleteNotification(id: string) {
@@ -198,7 +236,7 @@ export default function NotificationsPage() {
                         {notification.message}
                       </p>
                       <p className="text-xs text-muted-foreground mt-2">
-                        {notification.createdAt}
+                        {notification.created_at}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
