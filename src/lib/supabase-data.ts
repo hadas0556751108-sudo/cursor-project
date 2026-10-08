@@ -76,6 +76,23 @@ export interface Settings {
   request_categories: string[];
 }
 
+export interface UserNote {
+  id: string;
+  user_id: string;
+  note: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserTask {
+  id: string;
+  user_id: string;
+  title: string;
+  completed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 // Functions to fetch data from Supabase
 export async function getUsers(): Promise<User[]> {
   const { data, error } = await supabase.from('users').select('*');
@@ -161,4 +178,122 @@ export async function updateShift(id: string, updates: Partial<Shift>): Promise<
   const { data, error } = await supabase.from('shifts').update(updates).eq('id', id).select().single();
   if (error) throw error;
   return data;
+}
+
+export async function getUserNote(userId: string): Promise<UserNote | null> {
+  const { data, error } = await supabase
+    .from('user_notes')
+    .select('*')
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .single();
+  
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw error;
+  }
+  return data;
+}
+
+export async function saveUserNote(userId: string, note: string): Promise<UserNote> {
+  const { data: existingNote } = await supabase
+    .from('user_notes')
+    .select('id')
+    .eq('user_id', userId)
+    .limit(1)
+    .maybeSingle();
+
+  if (existingNote) {
+    const { data, error } = await supabase
+      .from('user_notes')
+      .update({ note, updated_at: new Date().toISOString() })
+      .eq('id', existingNote.id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  const { data, error } = await supabase
+    .from('user_notes')
+    .insert({ user_id: userId, note })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function getUserTasks(userId: string): Promise<UserTask[]> {
+  const { data, error } = await supabase
+    .from('user_tasks')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createUserTask(userId: string, title: string): Promise<UserTask> {
+  const { data, error } = await supabase
+    .from('user_tasks')
+    .insert({ user_id: userId, title })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateUserTask(id: string, updates: Partial<UserTask>): Promise<UserTask> {
+  const { data, error } = await supabase
+    .from('user_tasks')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteUserTask(id: string): Promise<void> {
+  const { error } = await supabase.from('user_tasks').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteNotification(id: string): Promise<void> {
+  const { error } = await supabase.from('notifications').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function updateSettings(id: string, updates: Partial<Settings>): Promise<Settings> {
+  const { data, error } = await supabase
+    .from('settings')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function createDepartment(department: Omit<Department, 'id'>): Promise<Department> {
+  const { data, error } = await supabase.from('departments').insert(department).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteDepartment(id: string): Promise<void> {
+  const { error } = await supabase.from('departments').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function createBranch(branch: Omit<Branch, 'id'>): Promise<Branch> {
+  const { data, error } = await supabase.from('branches').insert(branch).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteBranch(id: string): Promise<void> {
+  const { error } = await supabase.from('branches').delete().eq('id', id);
+  if (error) throw error;
 }

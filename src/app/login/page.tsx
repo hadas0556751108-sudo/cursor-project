@@ -76,7 +76,7 @@ export default function LoginPage() {
       // The user will be redirected to Google
     } catch (error: any) {
       console.error('Error signing in with Google:', error);
-      setError(error.message || 'Failed to sign in with Google');
+      setError(error.message || 'ההתחברות עם Google נכשלה');
       setLoading(false);
     }
   };
@@ -99,7 +99,7 @@ export default function LoginPage() {
       }
     } catch (error: any) {
       console.error('Error signing in with email:', error);
-      setError(error.message || 'Failed to sign in');
+      setError(error.message || 'ההתחברות נכשלה');
       setLoading(false);
     }
   };
@@ -145,17 +145,17 @@ export default function LoginPage() {
         } else {
           // Email confirmation required (autoConfirm disabled)
           console.log('⏳ No session, email confirmation required');
-          setError('Please check your email to confirm your account');
+          setError('יש לבדוק את תיבת המייל לאישור החשבון');
           setLoading(false);
         }
       } else {
         console.log('❌ No user returned from Supabase');
-        setError('Failed to create user account');
+        setError('יצירת החשבון נכשלה');
         setLoading(false);
       }
     } catch (error: any) {
       console.error('❌ Error signing up:', error);
-      setError(error.message || 'Failed to sign up');
+      setError(error.message || 'ההרשמה נכשלה');
       setLoading(false);
     }
   };
@@ -184,7 +184,7 @@ export default function LoginPage() {
 
           if (!defaultDepartment || !defaultBranch) {
             console.error('❌ No departments or branches found');
-            setError('System configuration error. Please contact administrator.');
+            setError('שגיאת תצורה במערכת. אנא פנה למנהל.');
             setLoading(false);
             return;
           }
@@ -210,7 +210,7 @@ export default function LoginPage() {
           foundUser = newUser;
         } catch (createError) {
           console.error('❌ Error creating user:', createError);
-          setError('Failed to create user account. Please try again.');
+          setError('יצירת החשבון נכשלה. נסה שוב.');
           setLoading(false);
           return;
         }
@@ -226,7 +226,7 @@ export default function LoginPage() {
       router.push('/');
     } catch (error) {
       console.error('❌ Error loading user data:', error);
-      setError('Failed to load user data');
+      setError('טעינת נתוני המשתמש נכשלה');
       setLoading(false);
     }
   };
@@ -245,16 +245,16 @@ export default function LoginPage() {
               HubOffice
             </CardTitle>
             <CardDescription className="text-[#8B949E]">
-              Medical Center ERP System
+              מערכת ניהול מרכז רפואי
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2 text-center">
               <h2 className="text-xl font-semibold text-[#E6EDF3]">
-                {isSignUp ? 'Create Account' : 'Welcome Back'}
+                {isSignUp ? 'יצירת חשבון' : 'ברוך שובך'}
               </h2>
               <p className="text-sm text-[#8B949E]">
-                {isSignUp ? 'Sign up to access your dashboard' : 'Sign in to access your dashboard'}
+                {isSignUp ? 'הירשם כדי לגשת ללוח הבקרה' : 'התחבר כדי לגשת ללוח הבקרה'}
               </p>
             </div>
 
@@ -267,13 +267,13 @@ export default function LoginPage() {
             <form onSubmit={isSignUp ? handleEmailSignUp : handleEmailSignIn} className="space-y-4">
               {isSignUp && (
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="text-[#E6EDF3]">Full Name</Label>
+                  <Label htmlFor="name" className="text-[#E6EDF3]">שם מלא</Label>
                   <div className="relative">
                     <Mail className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8B949E]" />
                     <Input
                       id="name"
                       type="text"
-                      placeholder="John Doe"
+                      placeholder="ישראל ישראלי"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       className="bg-[#0D1117] border-[#30363D] text-[#E6EDF3] placeholder-[#8B949E] pr-10"
@@ -284,7 +284,7 @@ export default function LoginPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-[#E6EDF3]">Email</Label>
+                <Label htmlFor="email" className="text-[#E6EDF3]">אימייל</Label>
                 <div className="relative">
                   <Mail className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8B949E]" />
                   <Input
@@ -300,7 +300,7 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-[#E6EDF3]">Password</Label>
+                <Label htmlFor="password" className="text-[#E6EDF3]">סיסמה</Label>
                 <div className="relative">
                   <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8B949E]" />
                   <Input
@@ -324,11 +324,11 @@ export default function LoginPage() {
               >
                 {loading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {isSignUp ? 'Creating account...' : 'Signing in...'}
+                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                    {isSignUp ? 'יוצר חשבון...' : 'מתחבר...'}
                   </>
                 ) : (
-                  isSignUp ? 'Sign Up' : 'Sign In'
+                  isSignUp ? 'הירשם' : 'התחבר'
                 )}
               </Button>
             </form>
@@ -338,7 +338,7 @@ export default function LoginPage() {
                 <span className="w-full border-t border-[#30363D]" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-[#161B22] px-2 text-[#8B949E]">Or continue with</span>
+                <span className="bg-[#161B22] px-2 text-[#8B949E]">או המשך עם</span>
               </div>
             </div>
 
@@ -350,12 +350,12 @@ export default function LoginPage() {
             >
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
+                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                  מתחבר...
                 </>
               ) : (
                 <>
-                  <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                  <svg className="me-2 h-4 w-4" viewBox="0 0 24 24">
                     <path
                       fill="currentColor"
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -373,7 +373,7 @@ export default function LoginPage() {
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                     />
                   </svg>
-                  Sign in with Google
+                  התחבר עם Google
                 </>
               )}
             </Button>
@@ -387,12 +387,12 @@ export default function LoginPage() {
                 }}
                 className="text-[#34E3D9] hover:underline"
               >
-                {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+                {isSignUp ? 'יש לך חשבון? התחבר' : 'אין לך חשבון? הירשם'}
               </button>
             </div>
 
             <div className="text-center text-xs text-[#8B949E]">
-              <p>By signing in, you agree to our Terms of Service and Privacy Policy</p>
+              <p>בהתחברות אתה מסכים לתנאי השימוש ולמדיניות הפרטיות</p>
             </div>
           </CardContent>
         </Card>

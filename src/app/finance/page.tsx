@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '@/contexts/auth-context';
-import { mockRequests, mockDepartments } from '@/lib/mock-data';
+import { getRequests, getDepartments, getUsers } from '@/lib/supabase-data';
+import { statusLabels, t } from '@/lib/labels';
 import { DollarSign, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -38,28 +39,81 @@ export default function FinancePage() {
   const { user } = useAuth();
   const isFinance = user?.role === 'finance' || user?.role === 'admin';
 
-  const expenseRequests = mockRequests.filter(r => r.type === 'expense');
-  const totalExpenses = expenseRequests.reduce((sum, r) => sum + (r.amount || 0), 0);
-  const approvedExpenses = expenseRequests.filter(r => r.status === 'approved').reduce((sum, r) => sum + (r.amount || 0), 0);
+  const [requests, setRequests] = React.useState<any[]>([]);
+  const [departments, setDepartments] = React.useState<any[]>([]);
+  const [users, setUsers] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
 
-  // Mock monthly data
-  const monthlyData = [
-    { month: 'Jan', expenses: 45000, budget: 50000 },
-    { month: 'Feb', expenses: 52000, budget: 50000 },
-    { month: 'Mar', expenses: 48000, budget: 50000 },
-    { month: 'Apr', expenses: 61000, budget: 50000 },
-    { month: 'May', expenses: 55000, budget: 50000 },
-    { month: 'Jun', expenses: 49000, budget: 50000 },
-  ];
+  React.useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [requestsData, departmentsData, usersData] = await Promise.all([
+          getRequests(),
+          getDepartments(),
+          getUsers()
+        ]);
+        setRequests(requestsData);
+        setDepartments(departmentsData);
+        setUsers(usersData);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
-  // Mock category data
-  const categoryData = [
-    { name: 'Training', value: 35000 },
-    { name: 'Equipment', value: 45000 },
-    { name: 'Travel', value: 25000 },
-    { name: 'Medical Supplies', value: 55000 },
-    { name: 'Other', value: 20000 },
-  ];
+  const expenseRequests = requests.filter(r => r.type === 'expense');
+  const totalExpenses = expenseRequests.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+  const approvedExpenses = expenseRequests.filter(r => r.status === 'approved').reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+
+  // Monthly expense data from real requests
+  const monthNames = ['ינו', 'פבר', 'מרץ', 'אפר', 'מאי', 'יונ', 'יול', 'אוג', 'ספט', 'אוק', 'נוב', 'דצמ'];
+  const monthlyMap: Record<string, number> = {};
+  expenseRequests.forEach(r => {
+    const d = new Date(r.created_at);
+    const key = monthNames[d.getMonth()];
+    monthlyMap[key] = (monthlyMap[key] || 0) + (Number(r.amount) || 0);
+  });
+  const monthlyData = monthNames
+    .filter(m => monthlyMap[m] !== undefined)
+    .map(month => ({ month, expenses: monthlyMap[month], budget: 15000 }));
+  if (monthlyData.length === 0) {
+    monthlyData.push({ month: 'Oct', expenses: 0, budget: 15000 });
+  }
+
+  // Category data from real requests
+  const categoryMap: Record<string, number> = {};
+  expenseRequests.forEach(r => {
+    const cat = r.category || 'אחר';
+    categoryMap[cat] = (categoryMap[cat] || 0) + (Number(r.amount) || 0);
+  });
+  const categoryData = Object.entries(categoryMap).map(([name, value]) => ({ name, value }));
+  if (categoryData.length === 0) {
+    categoryData.push({ name: 'אין נתונים', value: 1 });
+  }
+
+  // Department spending from real requests
+  const deptSpending = departments.map(dept => {
+    const deptUserIds = users.filter(u => u.department_id === dept.id).map(u => u.id);
+    const spent = expenseRequests
+      .filter(r => deptUserIds.includes(r.employee_id))
+      .reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    return { ...dept, spent };
+  });
+  const maxSpent = Math.max(...deptSpending.map(d => d.spent), 1);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">טוען...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isFinance) {
     return (
@@ -72,8 +126,8 @@ export default function FinancePage() {
         <Card className="glass">
           <CardContent className="p-12 text-center">
             <Wallet className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
-            <p className="text-muted-foreground">This page is only accessible to Finance Managers and Admins.</p>
+            <h2 className="text-xl font-semibold mb-2">גישה מוגבלת</h2>
+            <p className="text-muted-foreground">עמוד זה זמין רק למנהלי כספים ומנהלי מערכת.</p>
           </CardContent>
         </Card>
       </motion.div>
@@ -88,11 +142,13 @@ export default function FinancePage() {
       className="space-y-6"
     >
       {/* Header */}
-      <motion.div variants={itemVariants}>
-        <h1 className="text-3xl font-bold tracking-tight">Finance Hub</h1>
-        <p className="text-muted-foreground">
-          Monitor expenses, budgets, and financial approvals
-        </p>
+      <motion.div variants={itemVariants} className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">מרכז כספים</h1>
+          <p className="text-muted-foreground">
+            ניטור הוצאות, תקציבים ואישורים פיננסיים
+          </p>
+        </div>
       </motion.div>
 
       {/* KPI Cards */}
@@ -102,49 +158,49 @@ export default function FinancePage() {
       >
         <Card className="glass card-hover">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+            <CardTitle className="text-sm font-medium">סה"כ הוצאות</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">₪{totalExpenses.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">This month</p>
+            <p className="text-xs text-muted-foreground">החודש</p>
           </CardContent>
         </Card>
 
         <Card className="glass card-hover">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Approved</CardTitle>
+            <CardTitle className="text-sm font-medium">אושר</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">₪{approvedExpenses.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              {((approvedExpenses / totalExpenses) * 100).toFixed(0)}% of total
+              {((approvedExpenses / totalExpenses) * 100).toFixed(0)}% מסך ההוצאות
             </p>
           </CardContent>
         </Card>
 
         <Card className="glass card-hover">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
+            <CardTitle className="text-sm font-medium">ממתין</CardTitle>
             <TrendingDown className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {expenseRequests.filter(r => r.status === 'pending_finance').length}
             </div>
-            <p className="text-xs text-muted-foreground">Awaiting approval</p>
+            <p className="text-xs text-muted-foreground">ממתין לאישור</p>
           </CardContent>
         </Card>
 
         <Card className="glass card-hover">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Budget</CardTitle>
+            <CardTitle className="text-sm font-medium">תקציב</CardTitle>
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">₪300,000</div>
-            <p className="text-xs text-muted-foreground">Monthly budget</p>
+            <p className="text-xs text-muted-foreground">תקציב חודשי</p>
           </CardContent>
         </Card>
       </motion.div>
@@ -154,8 +210,8 @@ export default function FinancePage() {
         <motion.div variants={itemVariants}>
           <Card className="glass">
             <CardHeader>
-              <CardTitle>Monthly Expenses vs Budget</CardTitle>
-              <CardDescription>Expense tracking over 6 months</CardDescription>
+              <CardTitle>הוצאות חודשיות מול תקציב</CardTitle>
+              <CardDescription>מעקב הוצאות לאורך 6 חודשים</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -181,8 +237,8 @@ export default function FinancePage() {
         <motion.div variants={itemVariants}>
           <Card className="glass">
             <CardHeader>
-              <CardTitle>Expense Categories</CardTitle>
-              <CardDescription>Spending distribution by category</CardDescription>
+              <CardTitle>קטגוריות הוצאות</CardTitle>
+              <CardDescription>פילוח הוצאות לפי קטגוריה</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -219,8 +275,8 @@ export default function FinancePage() {
       <motion.div variants={itemVariants}>
         <Card className="glass">
           <CardHeader>
-            <CardTitle>Recent Expense Requests</CardTitle>
-            <CardDescription>Latest reimbursement submissions</CardDescription>
+            <CardTitle>בקשות הוצאה אחרונות</CardTitle>
+            <CardDescription>הגשות החזר אחרונות</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -238,12 +294,12 @@ export default function FinancePage() {
                     <div>
                       <p className="font-medium">{request.title}</p>
                       <p className="text-sm text-muted-foreground">
-                        {request.category} • {request.createdAt}
+                        {request.category} • {new Date(request.created_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="text-sm font-semibold">₪{request.amount?.toLocaleString()}</span>
+                    <span className="text-sm font-semibold">₪{Number(request.amount || 0).toLocaleString()}</span>
                     <Badge
                       variant={
                         request.status === 'approved'
@@ -255,7 +311,7 @@ export default function FinancePage() {
                           : 'warning'
                       }
                     >
-                      {request.status.replace('_', ' ')}
+                      {t(statusLabels, request.status)}
                     </Badge>
                   </div>
                 </motion.div>
@@ -269,12 +325,12 @@ export default function FinancePage() {
       <motion.div variants={itemVariants}>
         <Card className="glass">
           <CardHeader>
-            <CardTitle>Department Spending</CardTitle>
-            <CardDescription>Expense breakdown by department</CardDescription>
+            <CardTitle>הוצאות לפי מחלקה</CardTitle>
+            <CardDescription>פילוח הוצאות לפי מחלקה</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockDepartments.map((dept) => (
+              {deptSpending.map((dept) => (
                 <div key={dept.id} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div
@@ -288,13 +344,13 @@ export default function FinancePage() {
                       <div
                         className="h-2 rounded-full transition-all duration-500"
                         style={{
-                          width: `${Math.random() * 60 + 30}%`,
+                          width: `${Math.max((dept.spent / maxSpent) * 100, 4)}%`,
                           backgroundColor: dept.color
                         }}
                       />
                     </div>
                     <span className="text-sm text-muted-foreground w-20 text-right">
-                      ₪{(Math.random() * 50000 + 20000).toFixed(0)}
+                      ₪{dept.spent.toLocaleString()}
                     </span>
                   </div>
                 </div>

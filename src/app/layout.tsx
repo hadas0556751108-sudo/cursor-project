@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
-import { Sidebar } from "@/components/layout/sidebar";
-import { Topbar } from "@/components/layout/topbar";
-import { redirect } from "next/navigation";
+import { AppShell } from "@/components/layout/app-shell";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = localFont({
+  src: "../../public/fonts/Inter-Variable.ttf",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "HubOffice - Medical Center ERP",
@@ -22,15 +23,7 @@ export default function RootLayout({
     <html lang="he" dir="rtl">
       <body className={inter.className}>
         <AuthProvider>
-          <div className="flex h-screen overflow-hidden bg-[#0F1117]">
-            <div className="flex flex-1 flex-col overflow-hidden">
-              <Topbar />
-              <main className="flex-1 overflow-y-auto p-6">
-                {children}
-              </main>
-            </div>
-            <Sidebar />
-          </div>
+          <AppShell>{children}</AppShell>
         </AuthProvider>
       </body>
     </html>

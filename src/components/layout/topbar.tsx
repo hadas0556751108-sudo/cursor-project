@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/auth-context';
 import { getUsers, getNotifications } from '@/lib/supabase-data';
+import { roleLabels, t } from '@/lib/labels';
 import { cn } from '@/lib/utils';
 
 export function Topbar() {
@@ -73,7 +74,7 @@ export function Topbar() {
         {/* Current Role Badge */}
         <Badge variant="secondary" className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-[#34E3D9]/10 text-[#34E3D9] border-[#34E3D9]/20">
           <Shield className="h-3.5 w-3.5" />
-          <span className="capitalize font-medium">{user?.role}</span>
+          <span className="font-medium">{t(roleLabels, user?.role)}</span>
         </Badge>
 
         {/* Notifications */}
@@ -100,9 +101,9 @@ export function Topbar() {
               >
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-[#E6EDF3]">Notifications</h3>
+                    <h3 className="font-semibold text-[#E6EDF3]">התראות</h3>
                     <Badge variant="secondary" className="text-xs bg-[#34E3D9]/10 text-[#34E3D9] border-[#34E3D9]/20">
-                      {unreadCount} unread
+                      {unreadCount} לא נקראו
                     </Badge>
                   </div>
                   <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -123,7 +124,7 @@ export function Topbar() {
                   </div>
                   <Link href="/notifications" onClick={() => setShowNotifications(false)}>
                     <Button variant="outline" size="sm" className="w-full mt-3 border-[#34E3D9] text-[#34E3D9] hover:bg-[#34E3D9]/10">
-                      View All Notifications
+                      צפה בכל ההתראות
                     </Button>
                   </Link>
                 </div>
@@ -159,9 +160,9 @@ export function Topbar() {
                     </p>
                   </div>
                 </div>
-                <Badge variant="outline" className="w-fit capitalize flex items-center gap-1 border-[#34E3D9] text-[#34E3D9] bg-[#34E3D9]/10">
+                <Badge variant="outline" className="w-fit flex items-center gap-1 border-[#34E3D9] text-[#34E3D9] bg-[#34E3D9]/10">
                   <Shield className="h-3 w-3" />
-                  {user?.role}
+                  {t(roleLabels, user?.role)}
                 </Badge>
               </div>
             </DropdownMenuLabel>
@@ -170,11 +171,11 @@ export function Topbar() {
               <>
                 <DropdownMenuLabel className="text-xs font-semibold text-[#8B949E] flex items-center gap-2 bg-[#0D1117] p-2 rounded border border-[#30363D]">
                   <Lock className="h-3 w-3" />
-                  🔐 Switch User (Admin Only)
+                  החלפת משתמש (מנהלים בלבד)
                 </DropdownMenuLabel>
                 <div className="px-2 py-1">
                   <p className="text-xs text-[#8B949E] mb-2">
-                    Select a user account to simulate different roles
+                    בחר חשבון משתמש לדמות תפקידים שונים
                   </p>
                 </div>
                 {users.map((u) => (
@@ -193,10 +194,10 @@ export function Topbar() {
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-sm">{u.name}</span>
                         {user?.id === u.id && (
-                          <Badge variant="secondary" className="text-xs h-5 bg-[#34E3D9]/10 text-[#34E3D9] border-[#34E3D9]/20">Active</Badge>
+                          <Badge variant="secondary" className="text-xs h-5 bg-[#34E3D9]/10 text-[#34E3D9] border-[#34E3D9]/20">פעיל</Badge>
                         )}
                       </div>
-                      <span className="text-xs text-[#8B949E] capitalize">{u.role}</span>
+                      <span className="text-xs text-[#8B949E]">{t(roleLabels, u.role)}</span>
                     </div>
                     <UserIcon className="h-4 w-4 text-[#8B949E]" />
                   </DropdownMenuItem>
@@ -206,7 +207,7 @@ export function Topbar() {
             )}
             <DropdownMenuItem onClick={logout} className="text-[#FD6D61] flex items-center gap-2 hover:bg-[#FD6D61]/10">
               <Lock className="h-4 w-4" />
-              Log out
+              התנתקות
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

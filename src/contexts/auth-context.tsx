@@ -12,6 +12,7 @@ interface AuthContextType {
   setUser: (user: User | null) => void;
   setIsAuthenticated: (isAuthenticated: boolean) => void;
   isAuthenticated: boolean;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,15 +20,33 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        // Check Supabase Auth session first
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session?.user?.email) {
           const users = await getUsers();
+
+          // A saved (impersonated) user takes precedence over the auth user,
+          // so "Switch User" survives page refreshes.
+          const savedUser = localStorage.getItem('huboffice_user');
+          if (savedUser) {
+            try {
+              const parsedUser = JSON.parse(savedUser);
+              const foundSaved = users.find((u: User) => u.id === parsedUser.id);
+              if (foundSaved) {
+                setUser(foundSaved);
+                setIsAuthenticated(true);
+                return;
+              }
+            } catch {
+              localStorage.removeItem('huboffice_user');
+            }
+          }
+
           const foundUser = users.find((u: User) => u.email === session.user.email);
           if (foundUser) {
             setUser(foundUser);
@@ -63,25 +82,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        // Fallback to localStorage for demo mode
-        const users = await getUsers();
-        const savedUser = localStorage.getItem('huboffice_user');
-        if (savedUser) {
-          const parsedUser = JSON.parse(savedUser);
-          const foundUser = users.find((u: User) => u.id === parsedUser.id);
-          if (foundUser) {
-            setUser(foundUser);
-            setIsAuthenticated(true);
-          }
-        } else {
-          // Default to first user for demo
-          if (users.length > 0) {
-            setUser(users[0]);
-            setIsAuthenticated(true);
-          }
-        }
+        // No valid Supabase session — require sign-in.
+        // Clear any stale saved user so the app can't bypass the login screen.
+        localStorage.removeItem('huboffice_user');
+        setUser(null);
+        setIsAuthenticated(false);
       } catch (error) {
         console.error('Error loading users:', error);
+      } finally {
+        setLoading(false);
       }
     };
     loadUsers();
@@ -91,6 +100,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         if (event === 'SIGNED_IN' && session?.user?.email) {
           const users = await getUsers();
+
+          // A saved (impersonated) user takes precedence over the auth user.
+          // This event also fires when the tab regains focus and Supabase
+          // refreshes the session — without this check it would reset the
+          // switched user back to the admin on every tab focus.
+          const savedUser = localStorage.getItem('huboffice_user');
+          if (savedUser) {
+            try {
+              const parsedUser = JSON.parse(savedUser);
+              const foundSaved = users.find((u: User) => u.id === parsedUser.id);
+              if (foundSaved) {
+                setUser(foundSaved);
+                setIsAuthenticated(true);
+                return;
+              }
+            } catch {
+              localStorage.removeItem('huboffice_user');
+            }
+          }
+
           const foundUser = users.find((u: User) => u.email === session.user.email);
           if (foundUser) {
             setUser(foundUser);
@@ -134,15 +163,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    // Mock login - in real app would call Supabase auth
-    const users = await getUsers();
-    const foundUser = users.find((u: User) => u.email === email);
-    if (foundUser) {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    if (data.user?.email) {
+      const users = await getUsers();
+      const foundUser = users.find((u: User) => u.email === data.user!.email);
+      if (!foundUser) throw new Error('User not found in system');
       setUser(foundUser);
       setIsAuthenticated(true);
       localStorage.setItem('huboffice_user', JSON.stringify(foundUser));
-    } else {
-      throw new Error('Invalid credentials');
     }
   };
 
@@ -170,7 +199,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, switchUser, setUser, setIsAuthenticated, isAuthenticated }}>
+    <AuthContext.Provider value={{ user, login, logout, switchUser, setUser, setIsAuthenticated, isAuthenticated, loading }}>
       {children}
     </AuthContext.Provider>
   );

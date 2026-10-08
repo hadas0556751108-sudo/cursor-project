@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/auth-context';
-import { getNotifications, getUsers, updateNotification } from '@/lib/supabase-data';
+import { getNotifications, getUsers, updateNotification, deleteNotification as deleteNotificationFromDb } from '@/lib/supabase-data';
 import { Bell, Check, CheckCheck, Trash2, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -68,7 +68,7 @@ export default function NotificationsPage() {
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">טוען...</p>
         </div>
       </div>
     );
@@ -98,8 +98,13 @@ export default function NotificationsPage() {
     }
   }
 
-  function deleteNotification(id: string) {
-    setNotifications(notifications.filter(n => n.id !== id));
+  async function deleteNotification(id: string) {
+    try {
+      await deleteNotificationFromDb(id);
+      setNotifications(notifications.filter(n => n.id !== id));
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
   }
 
   function getNotificationIcon(type: string) {
@@ -146,22 +151,24 @@ export default function NotificationsPage() {
       {/* Header */}
       <motion.div variants={itemVariants} className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Notification Center</h1>
+          <h1 className="text-3xl font-bold tracking-tight">מרכז התראות</h1>
           <p className="text-muted-foreground">
-            Stay updated with your alerts and notifications
+            עדכונים והתראות שלך במקום אחד
           </p>
         </div>
-        <Badge variant="secondary" className="flex items-center gap-1.5 px-3 py-1.5">
-          <Bell className="h-3.5 w-3.5" />
-          <span>{unreadCount} unread</span>
-        </Badge>
+        <div className="flex items-center gap-3">
+          <Badge variant="secondary" className="flex items-center gap-1.5 px-3 py-1.5">
+            <Bell className="h-3.5 w-3.5" />
+            <span>{unreadCount} לא נקראו</span>
+          </Badge>
+        </div>
       </motion.div>
 
       {/* Filter Actions */}
       <motion.div variants={itemVariants} className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Filter:</span>
+          <span className="text-sm font-medium">סינון:</span>
         </div>
         <div className="flex gap-2">
           <Button
@@ -169,21 +176,21 @@ export default function NotificationsPage() {
             size="sm"
             onClick={() => setFilter('all')}
           >
-            All ({userNotifications.length})
+            הכל ({userNotifications.length})
           </Button>
           <Button
             variant={filter === 'unread' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setFilter('unread')}
           >
-            Unread ({unreadCount})
+            לא נקראו ({unreadCount})
           </Button>
           <Button
             variant={filter === 'read' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setFilter('read')}
           >
-            Read ({userNotifications.length - unreadCount})
+            נקראו ({userNotifications.length - unreadCount})
           </Button>
         </div>
         <div className="ml-auto flex gap-2">
@@ -195,7 +202,7 @@ export default function NotificationsPage() {
             className="flex items-center gap-2"
           >
             <CheckCheck className="h-4 w-4" />
-            Mark All Read
+            סמן הכל כנקרא
           </Button>
         </div>
       </motion.div>
@@ -206,9 +213,9 @@ export default function NotificationsPage() {
           <Card className="glass">
             <CardContent className="p-12 text-center">
               <Bell className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-semibold mb-2">No notifications</h3>
+              <h3 className="text-lg font-semibold mb-2">אין התראות</h3>
               <p className="text-muted-foreground">
-                {filter === 'unread' ? "You're all caught up!" : 'No notifications to display'}
+                {filter === 'unread' ? 'קראת את כל ההתראות!' : 'אין התראות להצגה'}
               </p>
             </CardContent>
           </Card>
@@ -245,7 +252,7 @@ export default function NotificationsPage() {
                           variant="ghost"
                           size="icon"
                           onClick={() => markAsRead(notification.id)}
-                          title="Mark as read"
+                          title="סמן כנקרא"
                         >
                           <Check className="h-4 w-4" />
                         </Button>
@@ -254,7 +261,7 @@ export default function NotificationsPage() {
                         variant="ghost"
                         size="icon"
                         onClick={() => deleteNotification(notification.id)}
-                        title="Delete"
+                        title="מחיקה"
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -271,18 +278,18 @@ export default function NotificationsPage() {
       <motion.div variants={itemVariants}>
         <Card className="glass">
           <CardHeader>
-            <CardTitle>Notification Types</CardTitle>
-            <CardDescription>Understanding your notification categories</CardDescription>
+            <CardTitle>סוגי התראות</CardTitle>
+            <CardDescription>סיווג ההתראות במערכת</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[
-                { icon: '✅', label: 'Request Approved', color: 'bg-green-500/10 border-green-500/20' },
-                { icon: '❌', label: 'Request Rejected', color: 'bg-red-500/10 border-red-500/20' },
-                { icon: '📝', label: 'Request Submitted', color: 'bg-blue-500/10 border-blue-500/20' },
-                { icon: '🔄', label: 'Shift Replacement', color: 'bg-yellow-500/10 border-yellow-500/20' },
-                { icon: '⚠️', label: 'Staffing Alert', color: 'bg-orange-500/10 border-orange-500/20' },
-                { icon: '🔔', label: 'General', color: 'bg-gray-500/10 border-gray-500/20' }
+                { icon: '✅', label: 'בקשה אושרה', color: 'bg-green-500/10 border-green-500/20' },
+                { icon: '❌', label: 'בקשה נדחתה', color: 'bg-red-500/10 border-red-500/20' },
+                { icon: '📝', label: 'בקשה הוגשה', color: 'bg-blue-500/10 border-blue-500/20' },
+                { icon: '🔄', label: 'החלפת משמרת', color: 'bg-yellow-500/10 border-yellow-500/20' },
+                { icon: '⚠️', label: 'התראת איוש', color: 'bg-orange-500/10 border-orange-500/20' },
+                { icon: '🔔', label: 'כללי', color: 'bg-gray-500/10 border-gray-500/20' }
               ].map((type) => (
                 <div
                   key={type.label}

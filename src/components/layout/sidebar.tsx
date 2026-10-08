@@ -15,16 +15,17 @@ import {
   LogOut
 } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
+import { roleLabels, t } from '@/lib/labels';
 import { cn } from '@/lib/utils';
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'My Calendar', href: '/calendar', icon: Calendar },
-  { name: 'Shift Manager', href: '/shifts', icon: Users, roles: ['manager', 'admin'] },
-  { name: 'Request Center', href: '/requests', icon: FileText },
-  { name: 'Notifications', href: '/notifications', icon: Bell },
-  { name: 'Finance Hub', href: '/finance', icon: DollarSign, roles: ['finance', 'admin'] },
-  { name: 'Admin Settings', href: '/settings', icon: Settings, roles: ['admin'] },
+  { name: 'לוח בקרה', href: '/', icon: LayoutDashboard },
+  { name: 'היומן שלי', href: '/calendar', icon: Calendar },
+  { name: 'ניהול משמרות', href: '/shifts', icon: Users, roles: ['manager', 'admin'] },
+  { name: 'מרכז בקשות', href: '/requests', icon: FileText },
+  { name: 'התראות', href: '/notifications', icon: Bell },
+  { name: 'מרכז כספים', href: '/finance', icon: DollarSign, roles: ['finance', 'admin'] },
+  { name: 'הגדרות מערכת', href: '/settings', icon: Settings, roles: ['admin'] },
 ];
 
 export function Sidebar() {
@@ -74,7 +75,7 @@ export function Sidebar() {
                 {isActive && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute left-0 h-8 w-1 rounded-r-full bg-[#34E3D9]"
+                    className="absolute right-0 h-8 w-1 rounded-l-full bg-[#34E3D9]"
                   />
                 )}
               </Link>
@@ -90,7 +91,7 @@ export function Sidebar() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="truncate text-sm font-medium text-[#E6EDF3]">{user?.name}</p>
-              <p className="truncate text-xs text-[#8B949E] capitalize">{user?.role}</p>
+              <p className="truncate text-xs text-[#8B949E]">{t(roleLabels, user?.role)}</p>
             </div>
           </div>
         </div>

@@ -47,7 +47,7 @@ export default function AuthCallback() {
               foundUser = newUser;
             } catch (createError) {
               console.error('Error creating user:', createError);
-              setError('Failed to create user account. Please try again.');
+              setError('יצירת החשבון נכשלה. נסה שוב.');
               return;
             }
           }
@@ -57,11 +57,11 @@ export default function AuthCallback() {
           localStorage.setItem('huboffice_user', JSON.stringify(foundUser));
           router.push('/');
         } else {
-          setError('No session found');
+          setError('לא נמצאה הפעלה פעילה');
         }
       } catch (error: any) {
         console.error('Error handling auth callback:', error);
-        setError(error.message || 'Authentication failed');
+        setError(error.message || 'האימות נכשל');
       }
     };
 
@@ -77,7 +77,7 @@ export default function AuthCallback() {
             onClick={() => router.push('/login')}
             className="text-[#34E3D9] hover:underline"
           >
-            Return to login
+            חזרה להתחברות
           </button>
         </div>
       </div>
@@ -94,7 +94,7 @@ export default function AuthCallback() {
     <div className="min-h-screen flex items-center justify-center bg-[#0F1117]">
       <div className="text-center space-y-4">
         <Loader2 className="h-8 w-8 animate-spin text-[#34E3D9] mx-auto" />
-        <p className="text-[#8B949E]">Signing you in...</p>
+        <p className="text-[#8B949E]">מתחבר...</p>
       </div>
     </div>
   );
