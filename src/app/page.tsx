@@ -89,7 +89,6 @@ export default function Dashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          to: 'hadas0556751108@gmail.com',
           subject: 'HubOffice - עדכון מערכת',
           html: `
             <!DOCTYPE html>
