@@ -12,7 +12,8 @@ import {
   DollarSign, 
   Settings,
   Bell,
-  LogOut
+  LogOut,
+  Building2
 } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { roleLabels, t } from '@/lib/labels';
@@ -22,6 +23,7 @@ const navigation = [
   { name: 'לוח בקרה', href: '/', icon: LayoutDashboard },
   { name: 'היומן שלי', href: '/calendar', icon: Calendar },
   { name: 'ניהול משמרות', href: '/shifts', icon: Users, roles: ['manager', 'admin'] },
+  { name: 'המחלקה שלי', href: '/department', icon: Building2, roles: ['manager'] },
   { name: 'מרכז בקשות', href: '/requests', icon: FileText },
   { name: 'התראות', href: '/notifications', icon: Bell },
   { name: 'מרכז כספים', href: '/finance', icon: DollarSign, roles: ['finance', 'admin'] },
