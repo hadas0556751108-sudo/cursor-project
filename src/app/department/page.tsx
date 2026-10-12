@@ -224,7 +224,7 @@ export default function DepartmentPage() {
                 <Sparkles className="h-5 w-5 text-[#34E3D9]" />
                 תובנות AI
               </CardTitle>
-              <CardDescription>ניתוח חכם של נתוני המחלקה באמצעות Grok</CardDescription>
+              <CardDescription>ניתוח חכם של נתוני המחלקה באמצעות AI</CardDescription>
             </div>
             <Button
               onClick={analyzeWithAi}

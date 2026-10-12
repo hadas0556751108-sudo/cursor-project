@@ -471,7 +471,7 @@ export default function Dashboard() {
                   תובנות AI
                 </CardTitle>
                 <CardDescription className="text-[#8B949E]">
-                  ניתוח חכם של נתוני המערכת באמצעות Grok
+                  ניתוח חכם של נתוני המערכת באמצעות AI
                 </CardDescription>
               </div>
               <Button

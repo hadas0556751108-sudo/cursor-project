@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const XAI_URL = 'https://api.x.ai/v1/chat/completions';
+const AI_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 interface AiSummaryBody {
   type?: 'dashboard' | 'department';
@@ -9,10 +9,10 @@ interface AiSummaryBody {
 
 export async function POST(request: NextRequest) {
   try {
-    const apiKey = process.env.XAI_API_KEY;
+    const apiKey = process.env.GROQ_API_KEY || process.env.XAI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'XAI_API_KEY is not configured' },
+        { error: 'GROQ_API_KEY is not configured' },
         { status: 500 }
       );
     }
@@ -24,14 +24,14 @@ export async function POST(request: NextRequest) {
         ? 'department view (employees and shifts of one department)'
         : 'executive dashboard (requests, shifts, budget, staffing alerts)';
 
-    const response = await fetch(XAI_URL, {
+    const response = await fetch(AI_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: process.env.XAI_MODEL || 'grok-3-mini',
+        model: process.env.GROQ_MODEL || process.env.XAI_MODEL || 'openai/gpt-oss-120b',
         messages: [
           {
             role: 'system',
@@ -55,9 +55,13 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error('xAI error:', response.status, errText);
+      console.error('AI provider error:', response.status, errText);
+      let detail = '';
+      try {
+        detail = JSON.parse(errText)?.error?.message || '';
+      } catch { /* ignore */ }
       return NextResponse.json(
-        { error: `AI request failed (${response.status})` },
+        { error: `AI request failed (${response.status})${detail ? ': ' + detail : ''}` },
         { status: 502 }
       );
     }
