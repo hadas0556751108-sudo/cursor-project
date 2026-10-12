@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/auth-context';
 import { getUsers, getShifts, getDepartments, User, Shift, Department } from '@/lib/supabase-data';
 import { roleLabels, shiftTypeLabels, statusLabels, t } from '@/lib/labels';
-import { Building2, Users, CalendarDays, AlertTriangle, Clock } from 'lucide-react';
+import { Building2, Users, CalendarDays, AlertTriangle, Clock, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -37,6 +38,9 @@ export default function DepartmentPage() {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const isManager = user?.role === 'manager';
 
@@ -106,6 +110,54 @@ export default function DepartmentPage() {
       month: 'numeric'
     });
 
+  async function analyzeWithAi() {
+    setAiLoading(true);
+    setAiError(null);
+
+    try {
+      const response = await fetch('/api/ai-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'department',
+          data: {
+            department: department?.name,
+            stats: {
+              employees: departmentUsers.length,
+              upcomingShifts: upcomingShifts.length,
+              unassignedShifts: unassignedShifts.length,
+            },
+            employees: departmentUsers.map(u => ({
+              name: u.name, role: u.role,
+            })),
+            upcomingShifts: upcomingShifts.slice(0, 15).map(s => ({
+              date: s.date,
+              time: `${s.start_time}-${s.end_time}`,
+              type: s.type,
+              assigned: !!s.employee_id,
+            })),
+            unassignedShifts: unassignedShifts.slice(0, 15).map(s => ({
+              date: s.date, time: `${s.start_time}-${s.end_time}`, type: s.type,
+            })),
+          },
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setAiSummary(result.summary);
+      } else {
+        setAiError(result.error || 'שגיאה בניתוח הנתונים');
+      }
+    } catch (error) {
+      console.error('AI analysis error:', error);
+      setAiError('שגיאה בניתוח הנתונים');
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   return (
     <motion.div
       variants={containerVariants}
@@ -160,6 +212,40 @@ export default function DepartmentPage() {
             <div className="text-2xl font-bold">{unassignedShifts.length}</div>
             <p className="text-xs text-muted-foreground">דורשות שיבוץ עובד</p>
           </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* AI Insights */}
+      <motion.div variants={itemVariants} dir="rtl">
+        <Card className="glass">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-[#34E3D9]" />
+                תובנות AI
+              </CardTitle>
+              <CardDescription>ניתוח חכם של נתוני המחלקה באמצעות Grok</CardDescription>
+            </div>
+            <Button
+              onClick={analyzeWithAi}
+              disabled={aiLoading}
+              className="flex items-center gap-2 bg-[#34E3D9] text-[#003734] hover:bg-[#27DDD3] font-medium"
+            >
+              <Sparkles className="h-4 w-4" />
+              {aiLoading ? 'מנתח נתונים...' : 'נתח נתונים'}
+            </Button>
+          </CardHeader>
+          {(aiSummary || aiError) && (
+            <CardContent>
+              {aiError ? (
+                <p className="text-sm text-red-400">{aiError}</p>
+              ) : (
+                <div className="text-sm leading-relaxed whitespace-pre-wrap rounded-lg border p-4 bg-background/50">
+                  {aiSummary}
+                </div>
+              )}
+            </CardContent>
+          )}
         </Card>
       </motion.div>
 

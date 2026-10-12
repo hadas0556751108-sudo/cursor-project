@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/auth-context';
 import { getShifts, getRequests, getDepartments, getUserTasks, createUserTask, updateUserTask, deleteUserTask, type UserTask } from '@/lib/supabase-data';
-import { Calendar, Clock, FileText, TrendingUp, AlertCircle, CheckCircle, DollarSign, Mail, Plus, Trash2 } from 'lucide-react';
+import { Calendar, Clock, FileText, TrendingUp, AlertCircle, CheckCircle, DollarSign, Mail, Plus, Trash2, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const containerVariants = {
@@ -45,6 +45,9 @@ export default function Dashboard() {
   const [tasks, setTasks] = React.useState<UserTask[]>([]);
   const [addingTask, setAddingTask] = React.useState(false);
   const [taskStatus, setTaskStatus] = React.useState<string | null>(null);
+  const [aiSummary, setAiSummary] = React.useState<string | null>(null);
+  const [aiLoading, setAiLoading] = React.useState(false);
+  const [aiError, setAiError] = React.useState<string | null>(null);
 
   const isManager = user?.role === 'manager' || user?.role === 'admin';
   const isFinance = user?.role === 'finance' || user?.role === 'admin';
@@ -162,6 +165,54 @@ export default function Dashboard() {
   const userShifts = shifts.filter(s => s.employee_id === user?.id);
   const userRequests = requests.filter(r => r.employee_id === user?.id);
   const pendingRequests = requests.filter(r => r.status === 'pending_dept' || r.status === 'pending_finance');
+
+  async function analyzeWithAi() {
+    setAiLoading(true);
+    setAiError(null);
+
+    try {
+      const response = await fetch('/api/ai-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'dashboard',
+          data: {
+            role: user?.role,
+            department: departments.find(d => d.id === user?.department_id)?.name,
+            stats: {
+              totalShifts: shifts.length,
+              unassignedShifts: shifts.filter(s => !s.employee_id).length,
+              pendingDeptRequests: requests.filter(r => r.status === 'pending_dept').length,
+              pendingFinanceRequests: requests.filter(r => r.status === 'pending_finance').length,
+              approvedRequests: requests.filter(r => r.status === 'approved').length,
+              rejectedRequests: requests.filter(r => r.status === 'rejected').length,
+              totalDepartments: departments.length,
+              openTasks: tasks.filter(t => !t.completed).length,
+            },
+            pendingRequests: pendingRequests.slice(0, 10).map(r => ({
+              title: r.title, type: r.type, amount: r.amount, status: r.status,
+            })),
+            unassignedShifts: shifts.filter(s => !s.employee_id).slice(0, 10).map(s => ({
+              date: s.date, shift_type: s.shift_type, department_id: s.department_id,
+            })),
+          },
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setAiSummary(result.summary);
+      } else {
+        setAiError(result.error || 'שגיאה בניתוח הנתונים');
+      }
+    } catch (error) {
+      console.error('AI analysis error:', error);
+      setAiError('שגיאה בניתוח הנתונים');
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   async function handleAddTask() {
     if (!user || !newTaskTitle.trim()) return;
@@ -409,6 +460,44 @@ export default function Dashboard() {
         </>
       )}
       
+      {/* AI Insights - Managers/Finance only */}
+      {(isManager || isFinance) && (
+        <motion.div variants={itemVariants} dir="rtl">
+          <Card className="bg-[#161B22] border-[#30363D]">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <div>
+                <CardTitle className="text-lg font-semibold text-[#E6EDF3] flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-[#34E3D9]" />
+                  תובנות AI
+                </CardTitle>
+                <CardDescription className="text-[#8B949E]">
+                  ניתוח חכם של נתוני המערכת באמצעות Grok
+                </CardDescription>
+              </div>
+              <Button
+                onClick={analyzeWithAi}
+                disabled={aiLoading}
+                className="flex items-center gap-2 bg-[#34E3D9] text-[#003734] hover:bg-[#27DDD3] font-medium"
+              >
+                <Sparkles className="h-4 w-4" />
+                {aiLoading ? 'מנתח נתונים...' : 'נתח נתונים'}
+              </Button>
+            </CardHeader>
+            {(aiSummary || aiError) && (
+              <CardContent>
+                {aiError ? (
+                  <p className="text-sm text-red-400">{aiError}</p>
+                ) : (
+                  <div className="text-sm text-[#E6EDF3] leading-relaxed whitespace-pre-wrap bg-[#0D1117] border border-[#30363D] rounded-lg p-4">
+                    {aiSummary}
+                  </div>
+                )}
+              </CardContent>
+            )}
+          </Card>
+        </motion.div>
+      )}
+
       {/* ... המשך רכיבים ... */}
     </motion.div>
   );
